@@ -75,20 +75,42 @@ router.get("/routes/today", async (req, res) => {
 // Новый маршрут для получения количества заказов и их статусов для маршрута
 router.get("/routes/orders", async (req, res) => {
   const { routeID } = req.query;
-  console.log("тут надо: " + routeID);
-
   try {
     const orders = await Order.findAll({
       where: {
         routeID: routeID,
       },
     });
-    console.log(orders);
 
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: "Произошла ошибка при получении заказов" });
   }
 });
+// Добавление нового маршрута
+router.post("/routes/add", async (req, res) => {
+  const { number, points, status, date, userID } = req.body;
 
+  // Валидация входных данных
+  if (!number || !status || !date) {
+    return res.status(400).json({ error: "Необходимо заполнить все поля" });
+  }
+
+  try {
+    // Создаем новый маршрут
+    const newRoute = await Route.create({
+      number,
+      points: points || 0, // Количество точек можно не указывать, если неизвестно
+      status,
+      date,
+      userID,
+    });
+
+    // Возвращаем созданный маршрут
+    res.status(201).json(newRoute);
+  } catch (error) {
+    console.error("Ошибка при добавлении маршрута:", error);
+    res.status(500).json({ error: "Произошла ошибка при добавлении маршрута" });
+  }
+});
 module.exports = router;

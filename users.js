@@ -3,11 +3,13 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { User } = require("./models");
 const { Op } = require("sequelize");
+const authenticateToken = require("./middleware/authenticateToken");
 const router = express.Router();
-
+// Секрет для подписи токена
+const JWT_SECRET = "your_jwt_secret";
 // Регистрация
 router.post("/register", async (req, res) => {
-  const { email, phone, name, password } = req.body;
+  const { email, phone, firstName, lastName, middleName, password } = req.body;
 
   try {
     // Проверка уникальности email и телефона
@@ -28,7 +30,9 @@ router.post("/register", async (req, res) => {
     const user = await User.create({
       email,
       phone,
-      name,
+      firstName,
+      lastName,
+      middleName,
       password: hashedPassword,
     });
 
@@ -39,11 +43,9 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Авторизация
+// Авторизация (логин)
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log("Введенный email:", email);
-  console.log("Введенный пароль:", password);
 
   try {
     const user = await User.findOne({ where: { email } });
@@ -52,21 +54,14 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Неправильный email или пароль" });
     }
 
-    console.log("Хэшированный пароль из БД:", user.password);
-
-    // Попробуем сами захешировать введенный пароль и сравнить с хешем в БД
-    const hashedInputPassword = await bcrypt.hash(password, 10);
-    console.log("Хэшированный введенный пароль:", hashedInputPassword);
-
     const isMatch = await bcrypt.compare(password, user.password);
-
-    console.log("Результат сравнения паролей:", isMatch);
 
     if (!isMatch) {
       return res.status(401).json({ error: "Неправильный email или пароль" });
     }
 
-    const token = jwt.sign({ userId: user.id }, "your_jwt_secret", {
+    // Генерация JWT токена
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
       expiresIn: "1h",
     });
 
@@ -76,5 +71,55 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: "Ошибка при авторизации" });
   }
 });
+// Получение данных профиля
+router.get("/user/profile", authenticateToken, async (req, res) => {
+  console.log(111);
+  try {
+    const user = await User.findByPk(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
 
+    res.json({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      middleName: user.middleName,
+      phone: user.phone,
+      email: user.email,
+    });
+  } catch (error) {
+    console.error("Ошибка при получении данных профиля:", error);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
+// Обновление данных профиля
+router.put("/user/update", authenticateToken, async (req, res) => {
+  const { firstName, lastName, middleName, phone, email, password } = req.body;
+
+  try {
+    const user = await User.findByPk(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    // Если пароль передан, то хэшируем новый пароль
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
+
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.middleName = middleName;
+    user.phone = phone;
+    user.email = email;
+
+    await user.save();
+
+    res.json({ message: "Данные профиля успешно обновлены" });
+  } catch (error) {
+    console.error("Ошибка при обновлении профиля:", error);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
 module.exports = router;

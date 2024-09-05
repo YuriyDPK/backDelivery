@@ -7,13 +7,11 @@ const { Order, Product } = require("./models");
 router.get("/orders/:routeID", async (req, res) => {
   try {
     const routeID = req.params.routeID;
-    // console.log(routeID);
     const orders = await Order.findAll({
       where: {
         routeID: routeID,
       },
     });
-    // console.log(orders);
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: "Произошла ошибка при получении заказов" });

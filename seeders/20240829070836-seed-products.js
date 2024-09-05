@@ -13,7 +13,7 @@ module.exports = {
         quantity: 100,
         createdAt: new Date(),
         updatedAt: new Date(),
-        orderID: 7,
+        orderID: 5,
         status: "не отсканирован",
       },
       {
@@ -25,7 +25,7 @@ module.exports = {
         quantity: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
-        orderID: 7,
+        orderID: 6,
         status: "не отсканирован",
       },
       // Добавьте ещё 8 продуктов

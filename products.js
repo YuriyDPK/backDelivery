@@ -6,7 +6,6 @@ const { Product, Order } = require("./models");
 router.get("/products/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
-    console.log(`Получаем товары для заказа с ID: ${orderId}`); // Лог для отладки
 
     const products = await Product.findAll({ where: { orderId } });
 
@@ -20,7 +19,7 @@ router.get("/products/:orderId", async (req, res) => {
 router.get("/products/check-order-status/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
-    console.log("поступает");
+
     // Получаем все товары для этого заказа
     const products = await Product.findAll({ where: { orderId } });
 
@@ -53,5 +52,34 @@ router.post("/products/:id/status", async (req, res) => {
     res.status(500).json({ error: "Ошибка при обновлении статуса товара" });
   }
 });
+router.post("/products/add", async (req, res) => {
+  const {
+    productNumberDatamatrix,
+    productName,
+    size,
+    volume,
+    price,
+    quantity,
+    orderID,
+  } = req.body;
 
+  try {
+    // Добавляем новый товар
+    const newProduct = await Product.create({
+      productNumberDatamatrix,
+      productName,
+      size,
+      volume,
+      price,
+      quantity,
+      orderID: orderID, // Привязываем к заказу
+      status: "Не отсканирован", // Статус по умолчанию
+    });
+
+    res.status(201).json(newProduct);
+  } catch (error) {
+    console.error("Ошибка при добавлении продукта:", error);
+    res.status(500).json({ error: "Ошибка при добавлении продукта" });
+  }
+});
 module.exports = router;
